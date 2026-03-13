@@ -352,7 +352,7 @@ export default function GetInitDetails({ onContinue, onSkip }) {
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
                 fontSize: "1.05rem", color: "#3d3b39", letterSpacing: "0.05em",
               }}>
-                PathFinder
+                CareerSphere
               </span>
             </div>
           </div>
