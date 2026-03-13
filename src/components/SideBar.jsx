@@ -9,11 +9,12 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  LogOut
 } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
 const menuItems = [
-  { id: "home", label: "Home", icon: Home, path: "/" },
+  { id: "home", label: "Home", icon: Home, path: "/home" },
   { id: "explore-careers", label: "Explore Careers", icon: Compass, path: "/explore" },
   { id: "aptitude-test", label: "Aptitude Test", icon: Brain, path: "/aptitude-test" },
   { id: "career-assessment", label: "Career Assessment", icon: ClipboardCheck, path: "/career-assessment" },
@@ -26,6 +27,8 @@ const SideBar = () => {
   const [collapsed, setCollapsed] = useState(true);
 
   const location = useLocation();
+  const navigate = useNavigate();
+
 
   return (
     <div
@@ -101,7 +104,7 @@ const SideBar = () => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
-            <Link to = {item.path}
+            <Link to={item.path}
               key={item.id}
               title={collapsed ? item.label : undefined}
               style={{
@@ -158,19 +161,11 @@ const SideBar = () => {
           gap: "10px",
         }}
       >
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "50%",
-            backgroundColor: "#E98074",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ color: "#fff", fontSize: "13px", fontWeight: "700", fontFamily: "Georgia, serif" }}>JD</span>
+        <div onClick={() => navigate("/")}>
+          <LogOut
+            size={20}
+            className="text-[#8E8D8A] hover:text-[#E85A4F] transition-colors cursor-pointer"
+          />
         </div>
         {!collapsed && (
           <div>

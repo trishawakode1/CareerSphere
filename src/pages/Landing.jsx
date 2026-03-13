@@ -248,7 +248,7 @@ function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
         <ModalWrapper isOpen={isOpen} onClose={onClose}>
             <CardHeader title="Welcome Back" />
             {submitted ? (
-                navigate("/")
+                navigate("/home")
             ) : (
                 <form onSubmit={handleSubmit} noValidate className="space-y-5">
                     <FormInput id="l-user" label="Username" type="text" placeholder="Enter your username"

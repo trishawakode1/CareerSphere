@@ -19,17 +19,15 @@ import Landing from "./pages/Landing";
 
 function App() {
 
-  const [isAuthed, setIsAuthed] = useState(true);
-
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/" element={<Layout />}>
 
-        {/* Home */}
-        <Route
-          index
-          element={isAuthed ? <Homepage /> : <Landing />}
-        />
+        {/* Landing Page */}
+        <Route index element={<Landing />} />
+
+        {/* Homepage after login */}
+        <Route path="home" element={<Homepage />} />
 
         {/* Dashboard Pages */}
         <Route path="explore" element={<Explore />} />
