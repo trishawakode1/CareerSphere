@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   Edit3,
@@ -18,6 +18,7 @@ import {
   Sparkles,
   AtSign,
 } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 const INTERESTS_OPTIONS = [
   "Technology", "Design", "Business", "Healthcare", "Education",
@@ -44,26 +45,29 @@ const CAREER_GOALS = [
   "Study abroad",
 ];
 
-const initialProfile = {
-  name: "Akshi Takle",
-  username: "akshii17",
-  email: "akshi@example.com",
-  phone: "+1 (555) 012-3456",
-  age: "23",
-  location: "San Francisco, CA",
-  degree: "Bachelor's Degree",
-  major: "Psychology",
-  institution: "University of California, Berkeley",
-  graduationYear: "2024",
-  currentRole: "Recent Graduate",
-  experience: "0–1 years",
-  bio: "Passionate about human-centered design and leveraging AI to solve real-world problems. Currently exploring career paths at the intersection of psychology and technology.",
-  careerGoal: "Land my first job",
-  interests: ["Design", "Technology", "Research"],
-  linkedin: "linkedin.com/in/janedoe",
-  portfolio: "janedoe.design",
+const createInitialProfile = (username = "") => ({
+  name: username,
+  username,
+  email: "",
+  phone: "",
+  age: "",
+  location: "",
+  degree: "",
+  major: "",
+  institution: "",
+  graduationYear: "",
+  currentRole: "",
+  experience: "",
+  bio: "",
+  careerGoal: "",
+  interests: [],
+  linkedin: "",
+  portfolio: "",
   photo: null,
-};
+});
+
+const displayOrDash = (value) => value || "—";
+const getApiBaseUrl = () => import.meta.env.VITE_API_BASE_URL || "";
 
 function Avatar({ photo, name, size = 120, onUpload, editable }) {
   const ref = useRef();
@@ -252,10 +256,56 @@ function SectionCard({ title, children, accent }) {
 }
 
 export default function Profile() {
-  const [profile, setProfile] = useState(initialProfile);
-  const [draft, setDraft] = useState(initialProfile);
+  const { user, token } = useAuth();
+  const [profile, setProfile] = useState(() => createInitialProfile(user?.username || ""));
+  const [draft, setDraft] = useState(() => createInitialProfile(user?.username || ""));
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [fetchingProfile, setFetchingProfile] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    const username = user?.username || "";
+    setProfile((prev) => ({
+      ...prev,
+      username: prev.username || username,
+      name: prev.name || username,
+    }));
+    setDraft((prev) => ({
+      ...prev,
+      username: prev.username || username,
+      name: prev.name || username,
+    }));
+  }, [user?.username]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!token) {
+        setFetchingProfile(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch profile");
+        }
+        setProfile(data.profile);
+        setDraft(data.profile);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setFetchingProfile(false);
+      }
+    };
+
+    fetchProfile();
+  }, [token]);
 
   const handleChange = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
 
@@ -273,11 +323,36 @@ export default function Profile() {
     }));
   };
 
-  const handleSave = () => {
-    setProfile(draft);
-    setEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    if (!token) {
+      return;
+    }
+
+    try {
+      setSavingProfile(true);
+      const response = await fetch(`${getApiBaseUrl()}/api/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(draft),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save profile");
+      }
+
+      setProfile(data.profile);
+      setDraft(data.profile);
+      setEditing(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleCancel = () => {
@@ -288,6 +363,16 @@ export default function Profile() {
   const completionFields = ["name", "email", "age", "degree", "major", "bio", "careerGoal", "phone", "location"];
   const filled = completionFields.filter((f) => profile[f]).length;
   const completion = Math.round((filled / completionFields.length) * 100);
+
+  if (fetchingProfile) {
+    return (
+      <div style={{ backgroundColor: "#F5F2EC", minHeight: "100vh", fontFamily: "Georgia, serif" }}>
+        <div style={{ maxWidth: "960px", margin: "0 auto", padding: "32px 24px", color: "#8E8D8A" }}>
+          Loading profile...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: "#F5F2EC", minHeight: "100vh", fontFamily: "Georgia, serif" }}>
@@ -342,10 +427,11 @@ export default function Profile() {
                   cursor: "pointer", fontFamily: "Georgia, serif",
                   transition: "background 0.2s",
                 }}
+                  disabled={savingProfile}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#d44f44")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#E85A4F")}
                 >
-                  <Save size={14} /> Save Changes
+                  <Save size={14} /> {savingProfile ? "Saving..." : "Save Changes"}
                 </button>
               </>
             ) : (
@@ -401,7 +487,7 @@ export default function Profile() {
             ) : (
               <>
                 <h2 style={{ margin: "0 0 4px", fontSize: "22px", fontWeight: "700", color: "#2e2d2b" }}>{profile.name}</h2>
-                <p style={{ margin: "0 0 10px", fontSize: "14px", color: "#8E8D8A" }}>@{profile.username}</p>
+                <p style={{ margin: "0 0 10px", fontSize: "14px", color: "#8E8D8A" }}>@{displayOrDash(profile.username)}</p>
               </>
             )}
 
@@ -414,7 +500,7 @@ export default function Profile() {
                 ].map((item, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", borderRadius: "100px", backgroundColor: "#D8C3A5", fontSize: "12px", color: "#2e2d2b" }}>
                     <item.icon size={11} color="#E85A4F" />
-                    {item.text}
+                    {displayOrDash(item.text)}
                   </div>
                 ))}
               </div>
@@ -557,11 +643,12 @@ export default function Profile() {
               color: "#fff", fontSize: "13px", fontWeight: "600",
               cursor: "pointer", fontFamily: "Georgia, serif",
             }}
+              disabled={savingProfile}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#d44f44")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#E85A4F")}
             >
               <Save size={14} style={{ display: "inline", marginRight: "6px", verticalAlign: "middle" }} />
-              Save Changes
+              {savingProfile ? "Saving..." : "Save Changes"}
             </button>
           </div>
         )}

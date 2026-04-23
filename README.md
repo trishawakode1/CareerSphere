@@ -1,16 +1,26 @@
-# React + Vite
+# CareerSphere
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Run frontend
 
-Currently, two official plugins are available:
+1. Open a terminal in `frontend`
+2. Run `npm install`
+3. Run `npm run dev`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Run backend auth server
 
-## React Compiler
+1. Open a second terminal in `backend`
+2. Run `npm install`
+3. Copy `.env.example` to `.env` and update values if needed
+4. SQLite is file-based, so no database server is needed
+5. Run `npm run dev`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The frontend proxies `/api/*` requests to `http://localhost:4000`.
 
-## Expanding the ESLint configuration
+## Authentication notes
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Auth now stores users in SQLite
+- Registration creates a persisted user with a hashed password
+- Login validates credentials from SQLite and returns JWT
+- A seeded demo account is available:
+  - Username: `demo`
+  - Password: `demo1234`

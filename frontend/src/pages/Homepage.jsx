@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useEffect } from "react";
+import axios from "axios";
 import {
   Sparkles,
   TrendingUp,
@@ -142,6 +144,26 @@ function StatCard({ icon: Icon, label, value, sub, iconColor }) {
 }
 
 export default function Homepage() {
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get("http://localhost:5000/api/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setUser(res.data.profile); 
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
   const [activeTab, setActiveTab] = useState("overview");
   const completedTasks = tasks.filter((t) => t.done).length;
   const progress = Math.round((completedTasks / tasks.length) * 100);
@@ -158,7 +180,7 @@ export default function Homepage() {
               <span style={{ fontSize: "12px", color: palette.muted, letterSpacing: "0.08em", textTransform: "uppercase" }}>Friday, 27 Feb 2026</span>
             </div>
             <h1 style={{ margin: 0, fontSize: "26px", fontWeight: "700", color: "#2e2d2b" }}>
-              Good morning, Akshi 👋
+              Good morning, {user?.name || "User"} 👋
             </h1>
             <p style={{ margin: "6px 0 0", fontSize: "15px", color: palette.muted }}>
               You're 40% through your career discovery journey. Let's keep going.
