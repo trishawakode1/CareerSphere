@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED PRIMITIVES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,21 +56,23 @@ function FormInput({ id, label, type, placeholder, value, onChange, error }) {
     );
 }
 
-function PrimaryButton({ children, type = "submit", onClick }) {
+function PrimaryButton({ children, type = "submit", onClick, disabled = false }) {
     const [hov, setHov] = useState(false);
     return (
         <button
             type={type}
             onClick={onClick}
+            disabled={disabled}
             onMouseEnter={() => setHov(true)}
             onMouseLeave={() => setHov(false)}
             className="w-full rounded-xl py-3.5 text-sm uppercase tracking-widest font-medium"
             style={{
-                backgroundColor: hov ? "#E85A4F" : "#E98074",
+                backgroundColor: disabled ? "#c9c4bb" : hov ? "#E85A4F" : "#E98074",
                 color: "#fff",
-                boxShadow: hov ? "0 8px 24px rgba(232,90,79,0.32)" : "0 2px 8px rgba(233,128,116,0.18)",
-                transform: hov ? "translateY(-1px)" : "translateY(0)",
+                boxShadow: disabled ? "none" : hov ? "0 8px 24px rgba(232,90,79,0.32)" : "0 2px 8px rgba(233,128,116,0.18)",
+                transform: disabled ? "translateY(0)" : hov ? "translateY(-1px)" : "translateY(0)",
                 transition: "all 0.25s ease",
+                cursor: disabled ? "not-allowed" : "pointer",
             }}
         >
             {children}
@@ -205,8 +208,10 @@ function ModalWrapper({ isOpen, onClose, children }) {
 function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
     const [form, setForm] = useState({ username: "", password: "" });
     const [errors, setErrors] = useState({});
-    const [submitted, setSubmitted] = useState(false);
+    const [apiError, setApiError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     // Reset on close
     useEffect(() => {
@@ -214,7 +219,8 @@ function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
             const t = setTimeout(() => {
                 setForm({ username: "", password: "" });
                 setErrors({});
-                setSubmitted(false);
+                setApiError("");
+                setSubmitting(false);
             }, 300);
             return () => clearTimeout(t);
         }
@@ -223,6 +229,7 @@ function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
     const handleChange = (field) => (e) => {
         setForm((p) => ({ ...p, [field]: e.target.value }));
         setErrors((p) => ({ ...p, [field]: "" }));
+        setApiError("");
     };
 
     const validate = () => {
@@ -232,7 +239,7 @@ function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
         return errs;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const errs = validate();
         if (Object.keys(errs).length > 0) {
@@ -240,30 +247,39 @@ function LoginModal({ isOpen, onClose, onSwitchToRegister }) {
             return;
         }
 
-        setSubmitted(true);
+        setSubmitting(true);
+        setApiError("");
+        try {
+            await login(form);
+            onClose();
+            navigate("/home");
+        } catch (error) {
+            setApiError(error.message || "Unable to login. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
 
     };
 
     return (
         <ModalWrapper isOpen={isOpen} onClose={onClose}>
             <CardHeader title="Welcome Back" />
-            {submitted ? (
-                navigate("/home")
-            ) : (
-                <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                    <FormInput id="l-user" label="Username" type="text" placeholder="Enter your username"
-                        value={form.username} onChange={handleChange("username")} error={errors.username} />
-                    <FormInput id="l-pass" label="Password" type="password" placeholder="Enter your password"
-                        value={form.password} onChange={handleChange("password")} error={errors.password} />
-                    <div className="pt-1">
-                        <PrimaryButton>Login</PrimaryButton>
-                    </div>
-                    <p className="text-center text-xs pt-1" style={{ color: "#8E8D8A" }}>
-                        Don't have an account?{" "}
-                        <NavLink onClick={onSwitchToRegister}>Register</NavLink>
-                    </p>
-                </form>
-            )}
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                <FormInput id="l-user" label="Username" type="text" placeholder="Enter your username"
+                    value={form.username} onChange={handleChange("username")} error={errors.username} />
+                <FormInput id="l-pass" label="Password" type="password" placeholder="Enter your password"
+                    value={form.password} onChange={handleChange("password")} error={errors.password} />
+                {apiError && (
+                    <p className="text-xs" style={{ color: "#E85A4F" }}>{apiError}</p>
+                )}
+                <div className="pt-1">
+                    <PrimaryButton disabled={submitting}>{submitting ? "Signing in..." : "Login"}</PrimaryButton>
+                </div>
+                <p className="text-center text-xs pt-1" style={{ color: "#8E8D8A" }}>
+                    Don't have an account?{" "}
+                    <NavLink onClick={onSwitchToRegister}>Register</NavLink>
+                </p>
+            </form>
         </ModalWrapper>
     );
 }
@@ -276,6 +292,9 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
     const [form, setForm] = useState({ username: "", password: "", confirm: "" });
     const [errors, setErrors] = useState({});
     const [submitted, setSubmitted] = useState(false);
+    const [apiError, setApiError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const { register } = useAuth();
 
     useEffect(() => {
         if (!isOpen) {
@@ -283,6 +302,8 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                 setForm({ username: "", password: "", confirm: "" });
                 setErrors({});
                 setSubmitted(false);
+                setApiError("");
+                setSubmitting(false);
             }, 300);
             return () => clearTimeout(t);
         }
@@ -291,6 +312,7 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
     const handleChange = (field) => (e) => {
         setForm((p) => ({ ...p, [field]: e.target.value }));
         setErrors((p) => ({ ...p, [field]: "" }));
+        setApiError("");
     };
 
     const validate = () => {
@@ -301,12 +323,20 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
         return errs;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const errs = validate();
         if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-        setSubmitted(true);
-        console.log("Register — Username:", form.username, "| Password:", form.password);
+        setSubmitting(true);
+        setApiError("");
+        try {
+            await register({ username: form.username, password: form.password });
+            setSubmitted(true);
+        } catch (error) {
+            setApiError(error.message || "Unable to register. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -323,8 +353,11 @@ function RegisterModal({ isOpen, onClose, onSwitchToLogin }) {
                     <FormInput id="r-conf" label="Confirm Password" type="password" placeholder="Re-enter your password"
                         value={form.confirm} onChange={handleChange("confirm")} error={errors.confirm} />
                     <div className="pt-1">
-                        <PrimaryButton>Register</PrimaryButton>
+                        <PrimaryButton disabled={submitting}>{submitting ? "Creating..." : "Register"}</PrimaryButton>
                     </div>
+                    {apiError && (
+                        <p className="text-xs" style={{ color: "#E85A4F" }}>{apiError}</p>
+                    )}
                     <p className="text-center text-xs pt-1" style={{ color: "#8E8D8A" }}>
                         Already have an account?{" "}
                         <NavLink onClick={onSwitchToLogin}>Sign In</NavLink>

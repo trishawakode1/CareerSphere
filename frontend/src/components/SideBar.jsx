@@ -12,6 +12,7 @@ import {
   LogOut
 } from "lucide-react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 const menuItems = [
   { id: "home", label: "Home", icon: Home, path: "/home" },
@@ -28,6 +29,12 @@ const SideBar = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
 
 
   return (
@@ -161,7 +168,7 @@ const SideBar = () => {
           gap: "10px",
         }}
       >
-        <div onClick={() => navigate("/")}>
+        <div onClick={handleLogout}>
           <LogOut
             size={20}
             className="text-[#8E8D8A] hover:text-[#E85A4F] transition-colors cursor-pointer"
@@ -169,8 +176,12 @@ const SideBar = () => {
         </div>
         {!collapsed && (
           <div>
-            <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#8E8D8A", fontFamily: "Georgia, serif" }}>Akshi Takle</p>
-            <p style={{ margin: 0, fontSize: "11px", color: "#D8C3A5", fontFamily: "Georgia, serif" }}>Student</p>
+            <p style={{ margin: 0, fontSize: "13px", fontWeight: "600", color: "#8E8D8A", fontFamily: "Georgia, serif" }}>
+              {user?.username || "Guest"}
+            </p>
+            <p style={{ margin: 0, fontSize: "11px", color: "#D8C3A5", fontFamily: "Georgia, serif" }}>
+              {user?.role || "Student"}
+            </p>
           </div>
         )}
       </div>

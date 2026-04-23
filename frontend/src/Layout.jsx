@@ -1,9 +1,9 @@
 import { Outlet } from "react-router-dom";
 import SideBar from "./components/SideBar";
+import { useAuth } from "./auth/AuthContext";
 
 const Layout = () => {
-
-    const isAuthed = true;
+    const { isAuthed } = useAuth();
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       
